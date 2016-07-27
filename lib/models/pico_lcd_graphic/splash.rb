@@ -9,7 +9,7 @@ BarkestLcd::PicoLcdGraphic.class_eval do
 
     if @splash_size.nil?
       write [ HID_REPORT.GET_MAX_STX_SIZE ]
-      loop while @splash_size.nil?
+      loop_while { @splash_size.nil? }
     end
 
     { size: @splash_size, max: @splash_max_size }

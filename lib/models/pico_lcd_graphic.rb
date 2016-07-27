@@ -4,6 +4,8 @@ require 'models/simple_debug'
 module BarkestLcd
   ##
   # A class to interface with the picoLCD 256x64 (aka picoLCD Graphic) from [www.mini-box.com](http://www.mini-box.com).
+  #
+  #
   class PicoLcdGraphic
 
     include BarkestLcd::SimpleDebug
@@ -21,6 +23,10 @@ module BarkestLcd
     ##
     # The device is not currently open.
     NotOpen = Class.new(PicoLcdError)
+
+    ##
+    # The device failed to open (no address returned).
+    OpenFailed = Class.new(PicoLcdError)
 
     ##
     # The operation has timed out.
@@ -89,8 +95,17 @@ module BarkestLcd
     def open
       raise AlreadyOpen if @device
       @device = HidApi::hid_open_path(path)
+
+      # check for failure!
+      if @device.address == 0
+        @device = nil
+        raise OpenFailed
+      end
+
       @device.set_nonblocking(1)
+
       reset
+
       self
     end
 
@@ -104,6 +119,8 @@ module BarkestLcd
         cs = (csi << 2) & 0xFF
         write [ OUT_REPORT.CMD, cs, 0x02, 0x00, 0x64, 0x3F, 0x00, 0x64, 0xC0 ]
       end
+
+      reset_hook.each { |hook| hook.call(self) }
 
       self
     end
@@ -121,7 +138,10 @@ module BarkestLcd
         input_hook(type).call(self, type, data)
 
       end
-      loop_hook.each { |block| block.call(self) }
+
+      loop_hook.each { |hook| hook.call(self) }
+
+      self
     end
 
 
@@ -189,6 +209,21 @@ module BarkestLcd
 
 
     ##
+    # Hooks a block to run during the reset method.
+    #
+    # Yields the device instance.
+    def reset_hook(method_name = nil, &block)
+      @reset_hook ||= []
+      if block_given?
+        @reset_hook << block
+      elsif method_name
+        @reset_hook << Proc.new { |dev| dev.send(method_name, dev) }
+      end
+      @reset_hook
+    end
+
+
+    ##
     # Hooks a block to run during initialization of an instance.
     #
     # Yields the device instance.
@@ -202,6 +237,25 @@ module BarkestLcd
       @init_hook
     end
 
+    ##
+    # Loops while the block returns true and the timeout hasn't expired.
+    def loop_while(options={}, &block)
+      timeout = options.delete(:timeout) || 2500
+      timeout = 10 if timeout < 10
+
+      result = block_given? ? block.call : true
+      while result
+        sleep 0.01
+        result = block_given? ? block.call : true
+        unless result
+          timeout -= 10
+          raise BarkestLcd::PicoLcdGraphic::Timeout if timeout < 0
+        end
+      end
+
+      true
+    end
+
 
     private
 
@@ -213,9 +267,8 @@ module BarkestLcd
       @serial = hid_device.serial_number
       @device = nil
 
-      self.class.init_hook.each do |init_proc|
-        init_proc.call self
-      end
+      self.class.init_hook.each { |hook| hook.call(self) }
+
     end
 
 
@@ -230,9 +283,11 @@ module BarkestLcd
       @device.read(32)
     end
 
+
   end
 end
 
+# Include the components of the model.
 Dir.glob(File.expand_path('../pico_lcd_graphic/*.rb', __FILE__)).each do |file|
   require file
 end

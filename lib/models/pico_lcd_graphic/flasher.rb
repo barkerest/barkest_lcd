@@ -26,7 +26,6 @@ BarkestLcd::PicoLcdGraphic.class_eval do
   def switch_mode
     next_mode = (mode == :keyboard) ? :flasher : :keyboard
     mode = :switching
-    timeout = 2500
 
     if next_mode == :flasher
       write [ HID_REPORT.EXIT_KEYBOARD, timeout & 0xFF, (timeout >> 8) & 0xFF ]
@@ -34,14 +33,7 @@ BarkestLcd::PicoLcdGraphic.class_eval do
       write [ HID_REPORT.EXIT_FLASHER, timeout & 0xFF, (timeout >> 8) & 0xFF ]
     end
 
-    while mode == :switching
-      sleep 0.01
-      loop
-      if mode == :switching
-        timeout -= 10
-        raise BarkestLcd::PicoLcdGraphic::Timeout if timeout < 0
-      end
-    end
+    loop_while { mode == :switching }
 
     self
   end

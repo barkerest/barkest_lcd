@@ -14,6 +14,21 @@ and `read_timeout` methods return only the bytes read.
 
 ## Installation
 
+This gem depends on [HID API](http://www.signal11.us/oss/hidapi/).
+
+Installation of the dependency is specific to the environment.
+
+For OS X (using homebrew):
+
+    $ brew install hidapi
+    
+For Ubuntu/Debian:
+
+    $ sudo apt-get install libhidapi-libusb0
+    $ cd /usr/lib/x86_64-linux-gnu
+    $ sudo ln -s libhidapi-libusb.so.0.0.0 libhidapi.so
+
+
 Add this line to your application's Gemfile:
 
 ```ruby

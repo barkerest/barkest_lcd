@@ -86,6 +86,11 @@ BarkestLcd::PicoLcdGraphic.class_eval do
   def init_display(_)
     init_graphic SCREEN_W, SCREEN_H
     loop_hook { |_| paint }
+    reset_hook do |_|
+      clear.paint
+      contrast DEFAULT_CONTRAST
+      backlight DEFAULT_BACKLIGHT
+    end
   end
 
 

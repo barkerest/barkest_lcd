@@ -10,7 +10,7 @@ BarkestLcd::PicoLcdGraphic.class_eval do
     unless @version
       @version = []
       write [ HID_REPORT.GET_VERSION_1 ]
-      loop while @version.empty?
+      loop_while { @version.empty? }
     end
 
     @version
