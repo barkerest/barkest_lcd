@@ -130,62 +130,63 @@ class PicoLcdGraphicTest < Test::Unit::TestCase
     if @dev
 
       print "\nDo you want to test a keypad attached to your PicoLcdGraphic device?"
-      skip unless get_answer
+      if get_answer
 
-      @dev.open
+        @dev.open
 
-      # for our bouncing square.
-      x = 4
-      y = 4
-      xd = -1
-      yd = 1
-      xm = @dev.width - 16
-      ym = @dev.height - 16
+        # for our bouncing square.
+        x = 4
+        y = 4
+        xd = -1
+        yd = 1
+        xm = @dev.width - 16
+        ym = @dev.height - 16
 
-      have_key = false
+        have_key = false
 
-      @dev.on_key_down do |key|
-        print "Key #{key} has just been pressed.\n"
-      end
-
-      @dev.on_key_up do |key|
-        print "Key #{key} has just been released.\n"
-        have_key = true
-      end
-
-      print "Press a key on the device to continue.\n"
-
-      until have_key
-        sleep 0.1
-        @dev.clear
-        @dev.draw_rect x, y, 16, 16
-        x += xd
-        if x < 0
-          x = 0
-          xd = 1
-        elsif x > xm
-          x = xm
-          xd = -1
-        end
-        y += yd
-        if y < 0
-          y = 0
-          yd = 1
-        elsif y > ym
-          y = ym
-          yd = -1
+        @dev.on_key_down do |key|
+          print "Key #{key} has just been pressed.\n"
         end
 
-        @dev.loop
-
-        if have_key
-          print 'Would you like to test another key?'
-          have_key = false if get_answer
-          print "Press another key on the device to continue.\n"
+        @dev.on_key_up do |key|
+          print "Key #{key} has just been released.\n"
+          have_key = true
         end
-      end
 
-      @dev.close
+        print "Press a key on the device to continue.\n"
+
+        until have_key
+          sleep 0.1
+          @dev.clear
+          @dev.draw_rect x, y, 16, 16
+          x += xd
+          if x < 0
+            x = 0
+            xd = 1
+          elsif x > xm
+            x = xm
+            xd = -1
+          end
+          y += yd
+          if y < 0
+            y = 0
+            yd = 1
+          elsif y > ym
+            y = ym
+            yd = -1
+          end
+
+          @dev.loop
+
+          if have_key
+            print 'Would you like to test another key?'
+            have_key = false if get_answer
+            print "Press another key on the device to continue.\n"
+          end
+        end
+
+        @dev.close
+      end
     end
   end
 

@@ -67,7 +67,7 @@ module BarkestLcd
     def self.devices(refresh = false)
       @devices = nil if refresh
       @devices ||=
-          HidApi::hid_enumerate(VENDOR_ID, DEVICE_ID).map do |dev|
+          HidApi::enumerate(VENDOR_ID, DEVICE_ID).map do |dev|
             BarkestLcd::PicoLcdGraphic.new(dev)
           end
     end
@@ -77,7 +77,7 @@ module BarkestLcd
     ##
     # Is this device currently open?
     def open?
-      !!@device
+      @device && @device.open?
     end
 
 
@@ -85,7 +85,6 @@ module BarkestLcd
     # Closes this device.
     def close
       @device.close rescue nil if @device
-      @device = nil
       self
     end
 
@@ -93,16 +92,9 @@ module BarkestLcd
     ##
     # Opens this device.
     def open
-      raise AlreadyOpen if @device
-      @device = HidApi::hid_open_path(path)
-
-      # check for failure!
-      if @device.address == 0
-        @device = nil
-        raise OpenFailed
-      end
-
-      @device.set_nonblocking(1)
+      raise AlreadyOpen if open?
+      @device.open
+      @device.blocking = false
 
       reset
 
@@ -262,10 +254,10 @@ module BarkestLcd
 
     def initialize(hid_device)
       @path = hid_device.path
-      @manufacturer = hid_device.manufacturer_string
-      @product = hid_device.product_string
+      @manufacturer = hid_device.manufacturer
+      @product = hid_device.product
       @serial = hid_device.serial_number
-      @device = nil
+      @device = hid_device
 
       self.class.init_hook.each { |hook| hook.call(self) }
 
@@ -273,14 +265,14 @@ module BarkestLcd
 
 
     def write(data)
-      raise NotOpen unless @device
-      @device.write(data.pack('C*'))
+      raise NotOpen unless open?
+      @device.write data
     end
 
 
     def read
-      raise NotOpen unless @device
-      @device.read(32)
+      raise NotOpen unless open?
+      @device.read
     end
 
 
