@@ -106,7 +106,7 @@ or screen artifacts up when your application is done.
     [mini-box](http://www.mini-box.com).
 *   The [picoLCD256x64](https://github.com/itszero/picoLCD256x64) project provided some inspiration, but I ended up going
     a completely different direction.
-
+*   The font came from [Silkscreen](http://www.kottke.org/plus/type/silkscreen/index.html).
 
 ## License
 
