@@ -83,18 +83,7 @@ module BarkestLcd
 
         end
 
-        def glyph.char
-          self[:char]
-        end
-        def glyph.width
-          self[:width]
-        end
-        def glyph.height
-          self[:height]
-        end
-        def glyph.data
-          self[:data]
-        end
+        add_glyph_helpers_to glyph
 
         glyph[:data].freeze
 
@@ -103,21 +92,44 @@ module BarkestLcd
         @glyphs[k] = glyph
       end
 
+      @height = @glyphs.inject(0) { |h,(key,g)| g.height > h ? g.height : h }
+      @nil_glyph = add_glyph_helpers_to(
+          {
+              char: '',
+              width: 0,
+              height: 0,
+              data: []
+          }
+      ).freeze
     end
+
+
+    ##
+    # Gets the height of the font.
+    attr_reader :height
 
     ##
     # Gets a glyph for the specified character.
     #
     # +char+ should be a string containing the character.
+    #
+    # Glyphs are hashes that also include helper methods.
+    #
+    #   g = {
+    #     char: ' ',
+    #     width: 2,
+    #     height: 8,
+    #     data: [[false,false],[false,false],[false,false],[false,false],[false,false],[false,false],[false,false],[false,false]]
+    #   }
+    #   g.char == g[:char]
+    #   g.width == g[:width]
+    #   g.height == g[:height]
+    #   g.data == g[:data]
+    #
     def glyph(char)
       char = char.to_s
       ch = char.getbyte(0).to_i
-      @glyphs[ch] ||= {
-          char: char,
-          width: 0,
-          height: 0,
-          data: []
-      }
+      @glyphs[ch] || @nil_glyph
     end
 
     ##
@@ -134,34 +146,81 @@ module BarkestLcd
     # With a +max_width+ it returns [ width, height, lines ].
     # Without a +max_width+ it returns [ width, height ].
     def measure(string, max_width = -1)
+
+      # handle newlines properly.
+      if string.include?("\n")
+        w = 0
+        h = 0
+        lines = []
+        string.split("\n").each do |line|
+          w2, h2, lines2 = measure(line, max_width)
+          w = w2 if w2 > w
+          h += h2
+          lines += lines2 if lines2
+        end
+        return [ w, h, lines ] if max_width > 0
+        return [ w, h ]
+      end
+
+      # convert to string and replace all whitespace with actual spaces.
+      # we don't support tabs or care about carriage returns.
+      # we also want to reduce all whitespace sequences to a single space.
+      string = string.to_s.gsub(/\s/, ' ').gsub(/\s\s+/, ' ')
+
       if max_width > 0
-        w,h = measure(string, -1)
-        if w <= max_width
+        # we are trying to fit the string into a specific width.
+
+        # no need to measure an empty string.
+        return [ 0, height, [ string ]] if string == ''
+
+        # measure the initial string.
+        w, h = measure(string)
+
+        # we fit or there are no spaces to wrap on.
+        if w <= max_width || !string.include?(' ')
           return [w, h, [ string ]]
         else
-          # wrap on words.
+
+          # prepare to wrap on word boundaries.
           cur_line,_,next_line = string.rpartition(' ')
 
-          return [ w, h, [ string ] ] unless next_line  # no spaces to wrap on.
+          # keep chopping off words until we can't chop any more off or we fit.
           while true
+            # measure the current line.
             w, h = measure(cur_line)
-            cur,_,next_word = cur_line.rpartition(' ')
-            if w <= max_width || next_word.nil?
+
+            if w <= max_width || !cur_line.include?(' ')
+              # we fit or we can't split anymore.
+
+              # measure up the rest of the string.
               w2, h2, lines = measure(next_line, max_width)
+
+              # and adjust the size as needed.
               w = w2 if w2 > w
               h += h2
+
+              # return the adjusted size and the lines.
               return [ w, h, [ cur_line ] + lines ]
             end
+
+            # chop off the next word.
+            cur_line,_,next_word = cur_line.rpartition(' ')
+
+            # add the chopped off word to the beginning of the next line.
             next_line = next_word + ' ' + next_line
-            cur_line = cur
           end
         end
+
+
       else
-        w, h = 0, 0
-        glyphs(string).each do |g|
-          h = g[:height] if g[:height] > h
-          w += g[:width]
-        end
+        # we are not trying to fit the string.
+
+        # no need to measure an empty string.
+        return [ 0, height ] if string == ''
+
+        h = height
+        w = glyphs(string).inject(0) { |_w,g| _w + g[:width] }
+
         [w, h]
       end
     end
@@ -203,7 +262,14 @@ module BarkestLcd
     end
 
     def to_s # :nodoc:
-      "#<#{self.class.name}:0x#{self.object_id.to_s(16)} name=#{name.inspect} size=#{size.inspect} bold=#{bold.inspect}>"
+      "#{name} #{bold ? 'Bold' : 'Regular'} #{size}pt"
+    end
+
+    def freeze # :nodoc
+      name.freeze
+      size.freeze
+      bold.freeze
+      super
     end
 
     ##
@@ -310,6 +376,23 @@ module BarkestLcd
       end
     end
 
+    private
+
+    def add_glyph_helpers_to(glyph)
+      def glyph.char
+        self[:char]
+      end
+      def glyph.width
+        self[:width]
+      end
+      def glyph.height
+        self[:height]
+      end
+      def glyph.data
+        self[:data]
+      end
+      glyph
+    end
 
   end
 end

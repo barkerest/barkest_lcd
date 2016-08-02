@@ -126,6 +126,61 @@ class PicoLcdGraphicTest < Test::Unit::TestCase
     end
   end
 
+  test 'should draw text' do
+    if @dev
+
+      @dev.open
+
+      @dev.clear
+      @dev.draw_text_box("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", 0, 0, @dev.width, @dev.height / 2)
+      @dev.draw_text_box("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", 0, @dev.height / 2, @dev.width, @dev.height / 2, bold: true)
+      @dev.paint
+
+      @dev.close
+
+      print "\nThe screen of the PicoLcdGraphic should have text displayed in both regular and bold font.\nIs this the case?"
+      assert get_answer
+
+    end
+  end
+
+  test 'draw_text should handle newlines' do
+    if @dev
+      @dev.open
+
+      @dev.clear
+      @dev.draw_text "First line.\nSecond line."
+      @dev.draw_text "\nThird line (over 20).\nFourth line (also over 20).", x: 20
+      @dev.paint
+
+      @dev.close
+
+      print "\nThe screen of the PicoLcdGraphic should have 4 lines of text with the 3rd and 4th over some.\nIs this the case?"
+      assert get_answer
+
+    end
+  end
+
+  test 'should allow specifying char spacing' do
+    if @dev
+
+      @dev.open
+
+      @dev.clear
+      @dev.draw_text 'This line has default char spacing (-1).', x: 0, y: 0
+      @dev.draw_text 'This line has -2 char spacing.', x: 0, y: @dev.text_offset_bottom, char_spacing: -2
+      @dev.draw_text 'This line has no char spacing modifier.', x: 0, y: @dev.text_offset_bottom, char_spacing: 0
+      @dev.draw_text 'This line has +1 char spacing.', x: 0, y: @dev.text_offset_bottom, char_spacing: 1
+      @dev.draw_text 'This line has +2 char spacing.', x: 0, y: @dev.text_offset_bottom, char_spacing: 2
+      @dev.paint
+
+      @dev.close
+
+      print "\nThe screen of the PicoLcdGraphic should have text displayed with varying char spacing.\nIs this the case?"
+      assert get_answer
+    end
+  end
+
   test 'should handle key presses' do
     if @dev
 
@@ -187,6 +242,78 @@ class PicoLcdGraphicTest < Test::Unit::TestCase
 
         @dev.close
       end
+    end
+  end
+
+  test 'should fill rectangles' do
+    if @dev
+      @dev.open
+
+      @dev.clear
+      @dev.fill_rect(20, 2, 60, 24)
+      @dev.fill_rect(50, 16, 60, 24, false)
+      @dev.draw_rect(50, 16, 60, 24)
+      @dev.fill_rect(80, 32, 60, 24)
+      @dev.paint
+
+      @dev.close
+
+      print "\nThe screen of the PicoLcdGraphic device should have several rectangles overlapping.\nThe top and bottom rectangles should be filled.\nIs this the case?"
+      assert get_answer
+    end
+  end
+
+  test 'should draw text boxes' do
+    if @dev
+      @dev.open
+
+      @dev.clear
+
+      # will have 1/16 of the screen as a border on left and right of each column.
+      cols = [
+          [ (@dev.width / 16).to_i, (@dev.width * (3.0 / 8)).to_i ],
+          [ ((@dev.width / 16) * 9).to_i, (@dev.width * (3.0 / 8)).to_i ]
+      ]
+
+      # 3 pixel buffer above and below each row.
+      rows = [
+          [ 3, 14 ],
+          [ 23, 14 ],
+          [ 43, 14 ]
+      ]
+
+      # second column is inverted of first column.
+      @dev.fill_rect(@dev.width / 2, 0, @dev.width / 2, @dev.height)
+
+      @dev.draw_text_box 'Box 1', cols[0][0], rows[0][0], cols[0][1], rows[0][1], align: :center
+      @dev.draw_text_box 'Box 2', cols[0][0], rows[1][0], cols[0][1], rows[1][1], align: :center, border: true
+      @dev.draw_text_box 'Box 3', cols[0][0], rows[2][0], cols[0][1], rows[2][1], align: :center, fill: true, bit: false
+
+      @dev.draw_text_box 'Box 4', cols[1][0], rows[0][0], cols[1][1], rows[0][1], align: :center, bit: false
+      @dev.draw_text_box 'Box 5', cols[1][0], rows[1][0], cols[1][1], rows[1][1], align: :center, border: true, bit: false
+      @dev.draw_text_box 'Box 6', cols[1][0], rows[2][0], cols[1][1], rows[2][1], align: :center, fill: true
+
+      @dev.paint
+
+      @dev.close
+
+      print "\nThe screen of the PicoLcdGraphic device should have 6 text boxes.\nIs this the case?"
+      assert get_answer
+    end
+  end
+
+  test 'text boxes should cut off overflow' do
+    if @dev
+      @dev.open
+
+      @dev.clear
+      @dev.draw_text_box("abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopwrstuv", 20, 20, 60, 27, border: true)
+      @dev.paint
+
+      @dev.close
+
+      print "\nThe screen of the PicoLcdGraphic device should have a text box with text cutoff.\nIs this the case?"
+      assert get_answer
     end
   end
 
