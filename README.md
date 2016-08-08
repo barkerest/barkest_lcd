@@ -7,10 +7,6 @@ the LCD panel I picked up.
 
 Currently it works with the PicoLCD from [www.mini-box.com](http://www.mini-box.com/picoLCD-256x64-Sideshow-CDROM-Bay).
 
-The gem uses the [hid_api](https://github.com/gareth/ruby_hid_api) gem to interface with the picoLCD.  I apply a few
-patches to the HidApi::Device class to make it play nice.  Notably by fixing the `close` method and making the `read`
-and `read_timeout` methods return only the bytes read.
-
 
 ## Installation
 

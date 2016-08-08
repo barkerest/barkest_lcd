@@ -1,16 +1,14 @@
 
-require 'models/simple_debug'
+require 'models/error_logger'
 
 module BarkestLcd
   ##
   # A class to interface with the picoLCD 256x64 (aka picoLCD Graphic) from [www.mini-box.com](http://www.mini-box.com).
   #
   #
-  class PicoLcdGraphic
+  class PicoLcdGraphic < ::HIDAPI::Device
 
-    include BarkestLcd::SimpleDebug
-
-
+    include BarkestLcd::ErrorLogger
 
     ##
     # Any of the Pico LCD errors.
@@ -32,26 +30,6 @@ module BarkestLcd
     # The operation has timed out.
     Timeout = Class.new(PicoLcdError)
 
-
-
-    ##
-    # Gets the manufacturer name.
-    attr_reader :manufacturer
-
-    ##
-    # Gets the product name.
-    attr_reader :product
-
-    ##
-    # Gets the serial number.
-    attr_reader :serial
-
-    ##
-    # Gets the path.
-    attr_reader :path
-
-
-
     ##
     # USB Vendor ID
     VENDOR_ID     = 0x04d8
@@ -66,41 +44,8 @@ module BarkestLcd
     # Enumerates the picoLCD devices attached to the system.
     def self.devices(refresh = false)
       @devices = nil if refresh
-      @devices ||=
-          HidApi::enumerate(VENDOR_ID, DEVICE_ID).map do |dev|
-            BarkestLcd::PicoLcdGraphic.new(dev)
-          end
+      @devices ||= HIDAPI.enumerate(VENDOR_ID, DEVICE_ID, as: 'BarkestLcd::PicoLcdGraphic')
     end
-
-
-
-    ##
-    # Is this device currently open?
-    def open?
-      @device && @device.open?
-    end
-
-
-    ##
-    # Closes this device.
-    def close
-      @device.close rescue nil if @device
-      self
-    end
-
-
-    ##
-    # Opens this device.
-    def open
-      raise AlreadyOpen if open?
-      @device.open
-      @device.blocking = false
-
-      reset
-
-      self
-    end
-
 
     ##
     # Resets the device.
@@ -149,18 +94,6 @@ module BarkestLcd
       end
     end
 
-
-
-    # :nodoc:
-    def inspect
-      "#<#{self.class.name}:#{self.object_id} path=#{path.inspect} manufacturer=#{manufacturer.inspect} product=#{product.inspect} (#{open? ? 'OPEN' : 'CLOSED'})>"
-    end
-
-
-    # :nodoc:
-    def to_s
-      inspect
-    end
 
 
     protected
@@ -249,31 +182,6 @@ module BarkestLcd
     end
 
 
-    private
-
-
-    def initialize(hid_device)
-      @path = hid_device.path
-      @manufacturer = hid_device.manufacturer
-      @product = hid_device.product
-      @serial = hid_device.serial_number
-      @device = hid_device
-
-      self.class.init_hook.each { |hook| hook.call(self) }
-
-    end
-
-
-    def write(data)
-      raise NotOpen unless open?
-      @device.write data
-    end
-
-
-    def read
-      raise NotOpen unless open?
-      @device.read
-    end
 
 
   end
