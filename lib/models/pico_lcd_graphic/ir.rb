@@ -22,7 +22,7 @@ BarkestLcd::PicoLcdGraphic.class_eval do
   end
 
   def process_ir_data(data)
-    debug "IR data: #{data.inspect}"
+    HIDAPI.debug "IR data: #{data.inspect}"
     if @on_ir_data
       @on_ir_data.call(data)
     end

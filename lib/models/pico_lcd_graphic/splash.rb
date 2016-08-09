@@ -31,7 +31,7 @@ BarkestLcd::PicoLcdGraphic.class_eval do
       else
         @splash_max_size = ((data.getbyte(1) << 8) & 0xFF00) | (data.getbyte(0) & 0xFF)
         @splash_size = ((data.getbyte(3) << 8) & 0xFF00) | (data.getbyte(2) & 0xFF)
-        debug "splash size=#{@splash_size}, max=#{@splash_max_size}"
+        HIDAPI.debug "splash size=#{@splash_size}, max=#{@splash_max_size}"
       end
     end
 

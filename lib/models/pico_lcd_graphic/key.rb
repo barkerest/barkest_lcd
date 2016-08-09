@@ -63,7 +63,7 @@ BarkestLcd::PicoLcdGraphic.class_eval do
       @keys += [nil] * (max - @keys.length)
     end
 
-    debug "Pressed keys: #{key1} #{key2}"
+    HIDAPI.debug "Pressed keys: #{key1} #{key2}"
 
     # go through the array and process changes.
     @keys.each_with_index do |state,index|

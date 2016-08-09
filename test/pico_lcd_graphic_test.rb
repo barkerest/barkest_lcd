@@ -14,17 +14,27 @@ class PicoLcdGraphicTest < Test::Unit::TestCase
   test 'should be able to open/close' do
     if @dev
       begin
+
+        # should not be open initially and should allow it to be opened.
         assert_equal false, @dev.open?
         @dev.open
         assert_equal true, @dev.open?
-        assert_raise BarkestLcd::PicoLcdGraphic::AlreadyOpen do
-          @dev.open
-        end
+
+        # opening a second time is also good, it should return immediately as the device is already open.
+        @dev.open
         assert_equal true, @dev.open?
+
+        # each open needs to be paired with a close, so this first close simply closes the second open
+        # and leaves the device open.
+        @dev.close
+        assert_equal true, @dev.open?
+
+        # this close should close the device since it is closing the first open.
         @dev.close
         assert_equal false, @dev.open?
 
         # make sure re-closing is valid.
+        # this may log a warning.
         @dev.close
 
         # make sure re-opening works.

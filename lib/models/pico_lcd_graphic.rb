@@ -113,7 +113,7 @@ module BarkestLcd
         @input_hook[incoming_type] = Proc.new { |dev, type, data| dev.send(method_name, dev, type, data) }
       else
         # get the hook
-        @input_hook[incoming_type] ||= Proc.new { |dev, type, data| debug "no input hook for #{type} message type with #{data.length} bytes of data" }
+        @input_hook[incoming_type] ||= Proc.new { |dev, type, data| HIDAPI.debug "no input hook for #{type} message type with #{data.length} bytes of data" }
       end
     end
 
@@ -149,20 +149,6 @@ module BarkestLcd
 
 
     ##
-    # Hooks a block to run during initialization of an instance.
-    #
-    # Yields the device instance.
-    def self.init_hook(method_name = nil, &block)
-      @init_hook ||= []
-      if block_given?
-        @init_hook << block
-      elsif method_name
-        @init_hook << Proc.new { |dev| dev.send(method_name, dev) }
-      end
-      @init_hook
-    end
-
-    ##
     # Loops while the block returns true and the timeout hasn't expired.
     def loop_while(options={}, &block)
       timeout = options.delete(:timeout) || 2500
@@ -181,6 +167,11 @@ module BarkestLcd
       true
     end
 
+    # Turn off blocking for the PicoLcdGraphic.
+    # If the user decides, they can turn blocking back on.
+    init_hook do |dev|
+      dev.blocking = false
+    end
 
 
 

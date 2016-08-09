@@ -49,7 +49,7 @@ BarkestLcd::PicoLcdGraphic.class_eval do
       data = data.getbyte(0)
       if data == 0
         @mode = :keyboard
-        debug 'switch to KEYBOARD mode'
+        HIDAPI.debug 'switch to KEYBOARD mode'
       else
         @mode = :unknown
         log_error data, 'HID_REPORT.EXIT_FLASHER failed'
@@ -60,7 +60,7 @@ BarkestLcd::PicoLcdGraphic.class_eval do
       data = data.getbyte(0)
       if data == 0
         @mode = :flasher
-        debug 'switched to FLASHER mode'
+        HIDAPI.debug 'switched to FLASHER mode'
       else
         @mode = :unknown
         log_error data, 'HID_REPORT.EXIT_KEYBOARD failed'
